@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0B6E7F">
+  <title>Abnahme-Protokoll</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="container">
+    <header class="page-header">
+      <div>
+        <h1>Abnahme-Protokoll</h1>
+        <p class="sub">Nachricht einfügen, Rest erledigt sich.</p>
+      </div>
+      <a href="/settings.html" class="icon-btn" title="Einstellungen" aria-label="Einstellungen">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </a>
+    </header>
+
+    <section id="stage-paste" class="card">
+      <textarea id="msg" placeholder="Tätigkeitsmeldung hier einfügen…" autofocus></textarea>
+      <button id="btn-process" class="primary">Protokoll erstellen</button>
+    </section>
+
+    <section id="stage-inputs" class="card hidden">
+      <h2>Noch ein paar Angaben</h2>
+      <p class="hint" id="hint-text"></p>
+
+      <label>
+        <span>Kunde</span>
+        <input id="kunde" list="kunden-list" autocomplete="off" />
+        <datalist id="kunden-list"></datalist>
+      </label>
+
+      <label>
+        <span>Stundensatz (€/h, netto)</span>
+        <input id="satz" type="text" inputmode="decimal" placeholder="z.B. 35,00" />
+      </label>
+
+      <label id="datum-row">
+        <span>Datum (TT.MM.JJJJ)</span>
+        <input id="datum" type="text" inputmode="numeric" placeholder="z.B. 01.01.2026" />
+      </label>
+
+      <div class="row">
+        <button id="btn-back" class="secondary">Zurück</button>
+        <button id="btn-submit" class="primary">Weiter</button>
+      </div>
+    </section>
+
+    <section id="stage-result" class="card hidden">
+      <div id="warn" class="warn hidden"></div>
+
+      <img id="result-preview" class="pdf-preview" alt="Vorschau des Protokolls" />
+
+      <a id="pdf-link" class="pdf-btn" target="_blank" rel="noopener">
+        <span class="icon">📄</span>
+        <span>PDF öffnen</span>
+        <span class="fname" id="fname"></span>
+      </a>
+
+      <h2>Buchungs-Übersicht</h2>
+      <table id="buchung" class="buchung"></table>
+
+      <button id="btn-new" class="primary">Nächstes Protokoll</button>
+    </section>
+
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div>
+      <p>Verarbeite Nachricht…</p>
+    </div>
+
+    <div id="error" class="error hidden"></div>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

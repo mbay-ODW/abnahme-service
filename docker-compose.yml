@@ -1,0 +1,32 @@
+services:
+  abnahme:
+    image: ghcr.io/mbay-odw/abnahme:latest
+    container_name: abnahme
+    hostname: abnahme
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - TZ=Europe/Berlin
+      - DATA_DIR=/data
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - /volume1/docker/abnahme/data:/data:rw
+    networks:
+      - default
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - traefik.http.routers.abnahme.rule=Host(`abnahme.bay-ram.de`)
+      - traefik.http.routers.abnahme.entrypoints=websecure
+      - traefik.http.routers.abnahme.tls=true
+      - traefik.http.routers.abnahme.tls.certresolver=mydnschallenge
+      - traefik.http.routers.abnahme.middlewares=middlewares-rate-limit@file,middlewares-authelia@file,middlewares-secure-headers@file
+      - traefik.http.services.abnahme.loadbalancer.server.port=8000
+
+networks:
+  default:
+    driver: bridge
+  traefik:
+    external: true

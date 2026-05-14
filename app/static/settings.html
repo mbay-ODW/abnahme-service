@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0B6E7F">
+  <title>Einstellungen — Abnahme</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="container container-wide">
+    <header class="page-header">
+      <div>
+        <h1>Einstellungen</h1>
+        <p class="sub">Konfiguration, Skill und PDF-Vorlage.</p>
+      </div>
+      <a href="/" class="icon-btn" title="Zurück" aria-label="Zurück zur Hauptseite">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5"/>
+          <path d="M12 19l-7-7 7-7"/>
+        </svg>
+      </a>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="general">Allgemein</button>
+      <button class="tab" data-tab="skill">Skill</button>
+      <button class="tab" data-tab="template">PDF-Vorlage</button>
+      <button class="tab" data-tab="help">Hilfe</button>
+    </nav>
+
+    <!-- ============ Tab: General ============ -->
+    <section id="tab-general" class="tab-pane card">
+      <h2>API & Verhalten</h2>
+
+      <label>
+        <span>Anthropic API-Key</span>
+        <div class="input-group">
+          <input id="api-key" type="password" autocomplete="off" placeholder="sk-ant-…" />
+          <button id="btn-toggle-key" class="icon-inline" type="button" title="Anzeigen">👁</button>
+        </div>
+        <small class="muted">Wird nur lokal auf dem Docker-Host gespeichert (settings.json).</small>
+      </label>
+
+      <label>
+        <span>Modell</span>
+        <select id="model">
+          <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (schnell, günstig)</option>
+          <option value="claude-opus-4-7">Claude Opus 4.7 (genauer, teurer)</option>
+          <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (sehr günstig)</option>
+        </select>
+      </label>
+
+      <div class="row-3">
+        <label>
+          <span>Nachtzuschlag (%)</span>
+          <input id="surcharge-night" type="number" min="0" max="200" step="1" />
+        </label>
+        <label>
+          <span>Sonntagszuschlag (%)</span>
+          <input id="surcharge-sunday" type="number" min="0" max="200" step="1" />
+        </label>
+        <label>
+          <span>Feiertagszuschlag (%)</span>
+          <input id="surcharge-holiday" type="number" min="0" max="200" step="1" />
+        </label>
+      </div>
+
+      <div class="row">
+        <button id="btn-save-general" class="primary">Speichern</button>
+        <button id="btn-test-key" class="secondary">API-Key testen</button>
+      </div>
+      <div id="test-result" class="test-result hidden"></div>
+    </section>
+
+    <!-- ============ Tab: Skill ============ -->
+    <section id="tab-skill" class="tab-pane card hidden">
+      <h2>Skill-Prompt</h2>
+      <p class="muted small">
+        Diese Anweisung erhält Claude als System-Prompt bei jeder Verarbeitung.
+        Vorsicht: falsche Änderungen können den Service brechen. Du kannst
+        jederzeit auf das Original zurücksetzen.
+      </p>
+
+      <div class="row" style="margin-bottom: 10px;">
+        <button id="btn-toggle-diff" class="secondary small">Diff anzeigen</button>
+        <button id="btn-reset-skill" class="secondary small">Auf Original zurücksetzen</button>
+      </div>
+
+      <textarea id="skill-editor" class="code-editor"></textarea>
+
+      <pre id="skill-diff" class="diff hidden"></pre>
+
+      <div class="row">
+        <button id="btn-save-skill" class="primary">Skill speichern</button>
+      </div>
+    </section>
+
+    <!-- ============ Tab: Template ============ -->
+    <section id="tab-template" class="tab-pane card hidden">
+      <h2>PDF-Vorlage</h2>
+      <p class="muted small">
+        Hochgeladene PDFs werden automatisch via Claude Vision analysiert,
+        um die Feld-Positionen zu erkennen. Du kannst anschließend prüfen,
+        ob die Positionen passen, und ggf. neu hochladen oder die JSON
+        manuell anpassen.
+      </p>
+
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="template-file" accept="application/pdf" hidden />
+        <p><strong>PDF hier ablegen</strong> oder <a href="#" id="btn-pick-file">Datei wählen</a></p>
+        <small class="muted">Max. 10 MB · A4 empfohlen</small>
+      </div>
+
+      <div id="upload-status" class="hidden"></div>
+
+      <div class="preview-row">
+        <div>
+          <h3>Aktuelle Vorlage <small class="muted">(mit Beispiel-Daten)</small></h3>
+          <img id="template-preview" src="/api/template/preview.png" class="pdf-preview" alt="Vorschau" />
+          <p class="muted small" style="margin-top: 6px;">
+            <a href="/api/template/preview" target="_blank" rel="noopener">PDF im neuen Tab öffnen</a>
+          </p>
+        </div>
+      </div>
+
+      <details class="positions-editor">
+        <summary>Positionen als JSON (Fallback-Editor)</summary>
+        <textarea id="positions-editor" class="code-editor small-editor"></textarea>
+        <div class="row">
+          <button id="btn-save-positions" class="primary small">JSON speichern</button>
+        </div>
+      </details>
+
+      <div class="row" style="margin-top: 20px;">
+        <button id="btn-reset-template" class="secondary">Default wiederherstellen</button>
+      </div>
+    </section>
+
+    <!-- ============ Tab: Help ============ -->
+    <section id="tab-help" class="tab-pane card hidden">
+      <article id="help-content" class="help-content">
+        <p class="muted">Lade Hilfe…</p>
+      </article>
+    </section>
+
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div>
+      <p id="loading-text">Lade…</p>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+  </main>
+
+  <script src="/settings.js"></script>
+</body>
+</html>

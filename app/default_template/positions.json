@@ -1,0 +1,26 @@
+{
+  "_comment": "PDF-Punkte, Ursprung unten links (ReportLab). A4: 595.27 x 841.89. y = Text-Baseline.",
+  "page_width": 595.27,
+  "page_height": 841.89,
+  "fields": {
+    "kunde":   { "x": 127.6, "y": 742.68, "w": 212.6, "size": 10, "align": "left" },
+    "objekt":  { "x": 127.6, "y": 722.83, "w": 212.6, "size": 10, "align": "left" },
+    "projekt": { "x": 127.6, "y": 702.99, "w": 212.6, "size": 10, "align": "left" },
+    "best_nr": { "x": 127.6, "y": 683.15, "w": 212.6, "size": 10, "align": "left" },
+    "datum":   { "x": 127.6, "y": 663.31, "w": 212.6, "size": 10, "align": "left" }
+  },
+  "table": {
+    "first_row_baseline_top": 561.26,
+    "first_row_baseline_center": 560.97,
+    "row_step": 21.26,
+    "row_count": 8,
+    "col1": { "x": 76.5, "w": 282.8, "size": 9, "align": "left", "wrap_lines": 2, "line_height": 9.92 },
+    "col2": { "x": 356.4, "w": 76.5, "size": 9, "align": "center" },
+    "col3": { "x": 432.9, "w": 85.0, "size": 9, "align": "center" },
+    "gesamt": { "y": 390.89, "x": 432.9, "w": 85.0, "size": 10, "align": "center", "bold": true }
+  },
+  "bemerkung": {
+    "x": 76.5, "y": 348.66, "w": 442.2,
+    "size": 9, "align": "left", "wrap_lines": 2, "line_height": 11.34
+  }
+}

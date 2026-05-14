@@ -1,0 +1,19 @@
+# Simple deployment variant without Traefik / Authelia.
+# Service exposed directly on port 8000.
+# Use this for development or when running behind another reverse proxy.
+#
+# For production with Traefik + Authelia, use docker-compose.yml instead.
+
+services:
+  abnahme:
+    build: .
+    image: abnahme:latest
+    container_name: abnahme
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+    environment:
+      - TZ=Europe/Berlin
+      - LOG_LEVEL=INFO
