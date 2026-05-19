@@ -117,21 +117,21 @@ def build_field_map(positions: dict[str, Any], data: dict[str, Any]) -> dict[str
             field_map[field_name] = (str(val), 11)
 
     # Table rows  {"1": [aufgabe_field, einheiten_field, summe_field], ...}
+    # Rows are matched by position (1-based). An explicit "row" key in the
+    # dict overrides the positional index — useful if Claude skips rows.
     row_fields = positions.get("row_fields") or {}
-    for row_data in (data.get("rows") or []):
-        # row_data is either a list [aufgabe, einheiten, summe] or a dict
+    for enum_idx, row_data in enumerate(data.get("rows") or [], start=1):
         if isinstance(row_data, dict):
-            row_idx = str(row_data.get("row", ""))
+            row_idx = str(row_data.get("row", enum_idx))
             aufgabe = row_data.get("aufgabe", "")
             einheiten = row_data.get("einheiten", "")
             summe = row_data.get("summe", "")
         else:
-            # Legacy list form: (aufgabe, einheiten, summe[, row_index])
+            # List form: [aufgabe, einheiten, summe]
             parts = list(row_data) + ["", "", ""]
             aufgabe, einheiten, summe = parts[0], parts[1], parts[2]
-            row_idx = ""
+            row_idx = str(enum_idx)
 
-        # Match by explicit row key, or fall back to enumeration order
         col = row_fields.get(row_idx)
         if col and len(col) >= 3:
             if aufgabe:
