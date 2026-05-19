@@ -71,6 +71,22 @@
         <button id="btn-test-key" class="secondary">API-Key testen</button>
       </div>
       <div id="test-result" class="test-result hidden"></div>
+
+      <hr class="section-divider" />
+      <h2>Logo</h2>
+      <p class="muted small">Wird in der Kopfzeile angezeigt. PNG, JPG, SVG oder WebP, max. 2 MB.</p>
+
+      <div id="logo-preview-wrap" class="logo-preview-wrap hidden">
+        <img id="logo-preview" src="" alt="Logo" class="logo-preview-img" />
+        <button id="btn-delete-logo" class="secondary small danger" type="button">Logo entfernen</button>
+      </div>
+
+      <div id="logo-upload-zone" class="upload-zone logo-upload-zone">
+        <input type="file" id="logo-file" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden />
+        <p><strong>Logo hier ablegen</strong> oder <a href="#" id="btn-pick-logo">Datei wählen</a></p>
+        <small class="muted">PNG · JPG · SVG · WebP — max. 2 MB</small>
+      </div>
+      <div id="logo-status" class="hidden" style="margin-top:8px;"></div>
     </section>
 
     <!-- ============ Tab: Skill ============ -->

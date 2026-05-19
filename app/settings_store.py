@@ -34,6 +34,8 @@ TEMPLATE_PATH = DATA_DIR / "template.pdf"
 POSITIONS_PATH = DATA_DIR / "positions.json"
 PDFS_DIR = DATA_DIR / "pdfs"
 
+_LOGO_EXTS = (".png", ".jpg", ".jpeg", ".svg", ".webp")
+
 # Defaults that get written on first run
 DEFAULT_SETTINGS: dict[str, Any] = {
     "anthropic_api_key": "",
@@ -199,6 +201,41 @@ def reset_template() -> None:
         shutil.copy2(src_pdf, TEMPLATE_PATH)
     if src_pos.exists():
         shutil.copy2(src_pos, POSITIONS_PATH)
+
+
+# ---------- Logo ----------------------------------------------------------
+
+
+def logo_path() -> Path | None:
+    """Return path to the stored logo file, or None if not set."""
+    for ext in _LOGO_EXTS:
+        p = DATA_DIR / f"logo{ext}"
+        if p.exists():
+            return p
+    return None
+
+
+def save_logo(content: bytes, ext: str) -> Path:
+    """Save logo bytes. Removes any previously stored logo first."""
+    delete_logo()
+    ext = ext.lower().lstrip(".")
+    if ext not in [e.lstrip(".") for e in _LOGO_EXTS]:
+        ext = "png"
+    path = DATA_DIR / f"logo.{ext}"
+    path.write_bytes(content)
+    return path
+
+
+def delete_logo() -> None:
+    """Remove all stored logo files."""
+    for ext in _LOGO_EXTS:
+        p = DATA_DIR / f"logo{ext}"
+        if p.exists():
+            p.unlink()
+
+
+def has_logo() -> bool:
+    return logo_path() is not None
 
 
 # ---------- Helpers -------------------------------------------------------

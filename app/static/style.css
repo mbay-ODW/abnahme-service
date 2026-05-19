@@ -579,3 +579,40 @@ button.small {
   margin: 24px 0;
 }
 .help-content strong { font-weight: 600; }
+
+/* Logo upload */
+.section-divider {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 28px 0 20px;
+}
+.logo-upload-zone {
+  padding: 20px 16px;
+  margin-bottom: 8px;
+}
+.logo-preview-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.logo-preview-img {
+  max-height: 80px;
+  max-width: 240px;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+  background: #fff;
+}
+button.danger {
+  color: #c0392b;
+  border-color: #c0392b;
+}
+button.danger:hover {
+  background: #fdecea;
+}
+.upload-zone.drag-over {
+  background: #e6f4f6;
+  border-color: var(--wb-blue);
+}

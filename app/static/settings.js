@@ -95,6 +95,84 @@ $("btn-test-key").onclick = async () => {
   }
 };
 
+// ---------- Logo ----------
+
+async function loadLogo() {
+  const res = await fetch("/api/settings/logo/info");
+  const info = await res.json();
+  if (info.has_logo) {
+    $("logo-preview").src = "/api/settings/logo?t=" + Date.now();
+    $("logo-preview-wrap").classList.remove("hidden");
+    $("logo-upload-zone").classList.add("hidden");
+  } else {
+    $("logo-preview-wrap").classList.add("hidden");
+    $("logo-upload-zone").classList.remove("hidden");
+  }
+}
+
+function setLogoStatus(msg, kind = "info") {
+  const el = $("logo-status");
+  el.textContent = msg;
+  el.className = kind;
+  el.classList.remove("hidden");
+  setTimeout(() => el.classList.add("hidden"), 4000);
+}
+
+async function uploadLogo(file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  showLoading("Logo hochladen…");
+  try {
+    const res = await fetch("/api/settings/logo", { method: "POST", body: fd });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || "Fehler beim Hochladen");
+    }
+    toast("Logo gespeichert.", "success");
+    await loadLogo();
+  } catch (e) {
+    setLogoStatus(`✗ ${e.message}`, "error");
+  } finally {
+    hideLoading();
+  }
+}
+
+$("btn-pick-logo").addEventListener("click", (e) => {
+  e.preventDefault();
+  $("logo-file").click();
+});
+
+$("logo-file").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (file) uploadLogo(file);
+});
+
+// Drag & drop auf der Logo-Upload-Zone
+const logoZone = $("logo-upload-zone");
+logoZone.addEventListener("dragover", (e) => { e.preventDefault(); logoZone.classList.add("drag-over"); });
+logoZone.addEventListener("dragleave", () => logoZone.classList.remove("drag-over"));
+logoZone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  logoZone.classList.remove("drag-over");
+  const file = e.dataTransfer.files[0];
+  if (file) uploadLogo(file);
+});
+
+$("btn-delete-logo").addEventListener("click", async () => {
+  if (!confirm("Logo wirklich entfernen?")) return;
+  showLoading("Entferne Logo…");
+  try {
+    const res = await fetch("/api/settings/logo", { method: "DELETE" });
+    if (!res.ok) throw new Error("Fehler beim Löschen");
+    toast("Logo entfernt.", "success");
+    await loadLogo();
+  } catch (e) {
+    toast(`Fehler: ${e.message}`, "error");
+  } finally {
+    hideLoading();
+  }
+});
+
 // ---------- Skill tab ----------
 
 let skillOriginal = "";
@@ -283,6 +361,7 @@ $("btn-reset-template").onclick = async () => {
 
 setupUpload();
 loadGeneral();
+loadLogo();
 loadSkill();
 loadTemplate();
 

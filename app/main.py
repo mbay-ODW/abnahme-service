@@ -47,16 +47,20 @@ from .settings_store import (
     DATA_DIR,
     PDFS_DIR,
     TEMPLATE_PATH,
+    delete_logo,
     ensure_bootstrap,
     get_api_key,
     get_model,
+    has_logo,
     load_positions,
     load_settings,
     load_skill,
     load_skill_original,
+    logo_path,
     mask_api_key,
     reset_skill,
     reset_template,
+    save_logo,
     save_positions,
     save_settings,
     save_skill,
@@ -347,6 +351,62 @@ def post_settings_test() -> dict[str, Any]:
     except Exception as exc:
         raise HTTPException(400, f"API-Key abgelehnt: {exc}") from exc
     return {"ok": True, "model": get_model()}
+
+
+# ---------- Logo ----------
+
+_LOGO_MIME = {
+    "png": "image/png",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "svg": "image/svg+xml",
+    "webp": "image/webp",
+}
+_MAX_LOGO_BYTES = 2 * 1024 * 1024  # 2 MB
+
+
+@app.get("/api/settings/logo")
+def get_logo():
+    """Serve the stored logo, or 404 if none uploaded."""
+    p = logo_path()
+    if not p:
+        raise HTTPException(404, "Kein Logo hochgeladen.")
+    ext = p.suffix.lstrip(".")
+    return Response(
+        content=p.read_bytes(),
+        media_type=_LOGO_MIME.get(ext, "image/png"),
+    )
+
+
+@app.post("/api/settings/logo")
+async def post_logo(file: UploadFile = File(...)) -> dict[str, Any]:
+    """Upload and store a logo image (PNG/JPG/SVG/WebP, max 2 MB)."""
+    filename = file.filename or ""
+    ext = Path(filename).suffix.lstrip(".").lower() or "png"
+    if ext not in _LOGO_MIME:
+        raise HTTPException(400, f"Dateiformat nicht unterstützt: .{ext}. Erlaubt: png, jpg, svg, webp")
+    content = await file.read()
+    if len(content) > _MAX_LOGO_BYTES:
+        raise HTTPException(400, "Logo zu groß (max. 2 MB).")
+    save_logo(content, ext)
+    return {"ok": True, "ext": ext, "size": len(content)}
+
+
+@app.delete("/api/settings/logo")
+def del_logo() -> dict[str, Any]:
+    """Remove the stored logo."""
+    if not has_logo():
+        raise HTTPException(404, "Kein Logo vorhanden.")
+    delete_logo()
+    return {"ok": True}
+
+
+@app.get("/api/settings/logo/info")
+def get_logo_info() -> dict[str, Any]:
+    p = logo_path()
+    if not p:
+        return {"has_logo": False}
+    return {"has_logo": True, "filename": p.name, "size": p.stat().st_size}
 
 
 # ---------- Skill ----------
