@@ -616,3 +616,14 @@ button.danger:hover {
   background: #e6f4f6;
   border-color: var(--wb-blue);
 }
+
+/* Page logo (above chat) */
+.page-logo-wrap {
+  text-align: center;
+  margin-bottom: 16px;
+}
+.page-logo {
+  max-height: 72px;
+  max-width: 100%;
+  object-fit: contain;
+}

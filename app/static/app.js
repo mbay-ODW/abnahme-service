@@ -249,3 +249,15 @@ $("msg").addEventListener("keydown", (e) => {
 });
 
 show("paste");
+
+// Logo: load once on startup, show above chat if set
+(async () => {
+  try {
+    const res = await fetch("/api/settings/logo/info");
+    const info = await res.json();
+    if (info.has_logo) {
+      $("page-logo").src = "/api/settings/logo?t=" + Date.now();
+      $("logo-wrap").classList.remove("hidden");
+    }
+  } catch (_) { /* no logo, no problem */ }
+})();
