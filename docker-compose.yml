@@ -1,6 +1,6 @@
 services:
   abnahme:
-    image: ghcr.io/mbay-odw/abnahme:latest
+    image: ghcr.io/mbay-odw/abnahme-service:latest
     container_name: abnahme
     hostname: abnahme
     restart: unless-stopped
@@ -11,7 +11,7 @@ services:
       - DATA_DIR=/data
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
-      - /volume1/docker/abnahme/data:/data:rw
+      - /mnt/apps/abnahme/data:/data:rw
     networks:
       - default
       - traefik
