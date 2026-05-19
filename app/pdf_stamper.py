@@ -1,8 +1,19 @@
-"""Stamp data fields onto a template PDF using positions config.
+"""Stamp data fields onto a template PDF.
 
-The template PDF provides the visual layout (background). We render an
-overlay PDF with ReportLab that contains just the dynamic text in the
-right places, then merge the two pages with pypdf.
+Two modes are supported, selected by positions["mode"]:
+
+  "overlay" (default)
+      Renders an invisible ReportLab overlay with the dynamic text at
+      pixel-precise coordinates and merges it onto the template page.
+      Works with any PDF — no AcroForm required.  Values are not editable
+      after stamping.
+
+  "acroform"
+      Writes values directly into the template's AcroForm text fields and
+      sets /NeedAppearances=true so the viewer regenerates appearances.
+      Requires an AcroForm PDF and field-name mappings in positions config.
+      Values remain fully editable in Acrobat / Preview / Foxit.
+      See app/acroform_filler.py for config schema and implementation.
 """
 
 from __future__ import annotations
@@ -159,9 +170,14 @@ def stamp_pdf(
 ) -> None:
     """Stamp dynamic data onto a copy of the template PDF.
 
-    Reads the first page of the template, overlays our dynamic text,
-    writes the result to out_path.
+    Dispatches to the AcroForm filler when positions["mode"] == "acroform",
+    otherwise uses the ReportLab overlay approach.
     """
+    if positions.get("mode") == "acroform":
+        from .acroform_filler import fill_acroform
+        fill_acroform(template_pdf_path, positions, data, out_path)
+        return
+
     template_pdf_path = Path(template_pdf_path)
     out_path = Path(out_path)
 
@@ -190,7 +206,16 @@ def stamp_preview(
     """Stamp dummy sample data so the user can visually verify positions.
 
     Uses generic placeholders only — no real customer names, business
-    details, or hourly rates appear in the rendered output."""
+    details, or hourly rates appear in the rendered output.
+
+    For acroform mode the preview is built from the header_fields and
+    row_fields keys declared in positions, so every configured field gets
+    a placeholder value regardless of template-specific field names.
+    """
+    if positions.get("mode") == "acroform":
+        _stamp_acroform_preview(template_pdf_path, positions, out_path)
+        return
+
     sample = {
         "kunde": "Beispiel-Kunde",
         "objekt": "Standort A",
@@ -211,3 +236,46 @@ def stamp_preview(
         "bemerkung": "Beispiel-Bemerkung zur Positions-Prüfung der PDF-Vorlage.",
     }
     stamp_pdf(template_pdf_path, positions, sample, out_path)
+
+
+def _stamp_acroform_preview(
+    template_pdf_path: str | Path,
+    positions: dict[str, Any],
+    out_path: str | Path,
+) -> None:
+    """Build a preview for acroform-mode templates using generic placeholders."""
+    from .acroform_filler import fill_acroform
+
+    # Build sample rows from however many row_fields are configured
+    row_fields: dict = positions.get("row_fields") or {}
+    sample_rows = [
+        {
+            "row": str(idx),
+            "aufgabe": f"Tätigkeit {idx}",
+            "einheiten": f"{idx} Std",
+            "summe": f"{idx} Std",
+        }
+        for idx in sorted(row_fields.keys(), key=lambda k: int(k) if k.isdigit() else 0)[:4]
+    ]
+
+    # Build header sample from configured header_fields keys
+    header_fields: dict = positions.get("header_fields") or {}
+    sample_header = {
+        "kunde": "Beispiel-Kunde",
+        "objekt": "Standort A",
+        "projekt": "Projekt 1",
+        "best_nr": "0000",
+        "datum": "01.01.2026",
+    }
+    # Include any extra header keys the template defines
+    for logical in header_fields:
+        if logical not in sample_header:
+            sample_header[logical] = f"[{logical}]"
+
+    sample = {
+        **sample_header,
+        "rows": sample_rows,
+        "gesamt_summe": f"{len(sample_rows)} Std",
+        "bemerkung": "Beispiel-Bemerkung zur Prüfung der Formularfelder.",
+    }
+    fill_acroform(template_pdf_path, positions, sample, out_path)
