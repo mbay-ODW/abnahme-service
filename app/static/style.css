@@ -638,3 +638,12 @@ button.danger:hover {
   background-size: 12px 12px;
   background-position: 0 0, 0 6px, 6px -6px, -6px 0;
 }
+
+/* Clickable upload zones + link-styled span (no anchor jump) */
+.upload-zone { cursor: pointer; }
+.linklike {
+  color: var(--wb-blue);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.logo-preview-wrap .logo-preview-img { cursor: default; }

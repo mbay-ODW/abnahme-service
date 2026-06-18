@@ -625,5 +625,20 @@ def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
 
+class NoCacheStaticFiles(StaticFiles):
+    """Serve static assets with Cache-Control: no-cache.
+
+    The browser keeps using ETag/Last-Modified (so unchanged files still get a
+    cheap 304), but it always revalidates before reuse — so a redeploy never
+    leaves a stale settings.js/app.js cached, which previously broke newly
+    added buttons (e.g. the signature upload).
+    """
+
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 # Static SPA — mounted last so /api routes take precedence
-app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="static")
+app.mount("/", NoCacheStaticFiles(directory=str(STATIC_DIR), html=True), name="static")

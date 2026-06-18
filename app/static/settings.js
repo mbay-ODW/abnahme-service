@@ -137,18 +137,15 @@ async function uploadLogo(file) {
   }
 }
 
-$("btn-pick-logo").addEventListener("click", (e) => {
-  e.preventDefault();
-  $("logo-file").click();
-});
-
 $("logo-file").addEventListener("change", (e) => {
   const file = e.target.files[0];
   if (file) uploadLogo(file);
+  e.target.value = "";  // allow re-selecting the same file
 });
 
-// Drag & drop auf der Logo-Upload-Zone
+// Whole zone is clickable (and drag & drop) — opens the file picker.
 const logoZone = $("logo-upload-zone");
+logoZone.addEventListener("click", () => $("logo-file").click());
 logoZone.addEventListener("dragover", (e) => { e.preventDefault(); logoZone.classList.add("drag-over"); });
 logoZone.addEventListener("dragleave", () => logoZone.classList.remove("drag-over"));
 logoZone.addEventListener("drop", (e) => {
@@ -215,17 +212,15 @@ async function uploadSignature(file) {
   }
 }
 
-$("btn-pick-signature").addEventListener("click", (e) => {
-  e.preventDefault();
-  $("signature-file").click();
-});
-
 $("signature-file").addEventListener("change", (e) => {
   const file = e.target.files[0];
   if (file) uploadSignature(file);
+  e.target.value = "";  // allow re-selecting the same file
 });
 
+// Whole zone is clickable (and drag & drop) — opens the file picker.
 const sigZone = $("signature-upload-zone");
+sigZone.addEventListener("click", () => $("signature-file").click());
 sigZone.addEventListener("dragover", (e) => { e.preventDefault(); sigZone.classList.add("drag-over"); });
 sigZone.addEventListener("dragleave", () => sigZone.classList.remove("drag-over"));
 sigZone.addEventListener("drop", (e) => {
