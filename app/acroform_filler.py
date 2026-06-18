@@ -13,10 +13,15 @@ Why not use pypdf's update_page_form_field_values?
   only text fields (/FT=/Tx), strip stale /AP streams, and force appearance
   regeneration via /NeedAppearances=true.
 
-Known rendering gotcha:
-  Poppler (pdftoppm) and LibreOffice may mis-render special characters (×, €)
-  in regenerated appearances. Acrobat, macOS Preview, PyMuPDF, and Foxit are
-  reliable. Prefer those viewers for validation.
+Umlauts / appearance baking:
+  We do NOT rely on /NeedAppearances (viewer-side appearance regeneration).
+  Poppler — which our server-side preview uses (pdf2image) — drops umlauts
+  (ä ö ü ß) and some special chars when it regenerates field appearances.
+  Instead we BAKE the appearance streams ourselves via pypdf
+  (update_page_form_field_values with auto_regenerate=False), so the glyphs
+  are drawn explicitly and render identically in every viewer, poppler
+  included. The fields stay editable (the /V values remain). We fall back to
+  the /NeedAppearances approach only if baking raises.
 
 Positions-config keys used by this module (under "mode": "acroform"):
   header_fields  : {logical_name: acroform_field_name, ...}
@@ -64,18 +69,42 @@ def _qualified_name(annot) -> str:
     return ".".join(parts)
 
 
-def _set_field(annot, value: str, font_size: int = 10) -> None:
-    """Write a value into a single widget annotation.
+def _set_da_size(annot, font_size: int) -> None:
+    """Force an explicit font size in a widget's /DA.
 
-    Also overrides /DA to set an explicit font size. Many templates ship
-    with size 0 (auto-grow), which causes viewers to render the first field
-    that gets focus at a huge size. Explicit size prevents this.
+    Many templates ship /DA with size 0 (auto-grow). Auto-grow makes baked
+    appearances render comically large (the glyph is scaled to the field
+    height), so we pin an explicit size before baking.
+    """
+    annot[NameObject("/DA")] = TextStringObject(f"/Helv {font_size} Tf 0 g")
+
+
+def _set_field_needappearances(annot, value: str, font_size: int = 10) -> None:
+    """Fallback writer: set /V + /DA and drop /AP so the viewer regenerates.
+
+    Only used if appearance baking raises. Subject to the poppler umlaut bug,
+    but better than no value at all.
     """
     annot[NameObject("/V")] = TextStringObject(str(value))
-    annot[NameObject("/DA")] = TextStringObject(f"/Helv {font_size} Tf 0 g")
-    # Drop stale cached appearance so the viewer regenerates from /V + /DA.
+    _set_da_size(annot, font_size)
     if "/AP" in annot:
         del annot["/AP"]
+
+
+def _text_widgets(page):
+    """Yield the text-field (/FT=/Tx) widget annotations on a page."""
+    annots = page.get("/Annots")
+    if not annots:
+        return
+    if hasattr(annots, "get_object"):
+        annots = annots.get_object()
+    for annot_ref in annots:
+        annot = annot_ref.get_object()
+        if annot.get("/Subtype") != "/Widget":
+            continue
+        if annot.get("/FT") != "/Tx":
+            continue  # skip buttons, checkboxes, signatures, etc.
+        yield annot
 
 
 def _wrap_text(text: str, chars_per_line: int, max_lines: int) -> list[str]:
@@ -188,38 +217,55 @@ def fill_acroform(
     reader = PdfReader(str(template_path))
     writer = PdfWriter(clone_from=reader)
 
-    # Tell every viewer to regenerate appearances from /V using each field's /DA.
-    # Without this, viewers may show stale (empty) cached appearance streams.
-    root = writer._root_object
-    if "/AcroForm" in root:
-        root["/AcroForm"].update({
-            NameObject("/NeedAppearances"): BooleanObject(True),
-        })
-
+    # Pin an explicit font size on every target field's /DA before baking,
+    # otherwise size-0 (auto-grow) fields render huge in the baked appearance.
     filled: set[str] = set()
     for page in writer.pages:
-        annots = page.get("/Annots")
-        if not annots:
-            continue
-        if hasattr(annots, "get_object"):
-            annots = annots.get_object()
-        for annot_ref in annots:
-            annot = annot_ref.get_object()
-            if annot.get("/Subtype") != "/Widget":
-                continue
-            if annot.get("/FT") != "/Tx":
-                continue  # skip buttons, checkboxes, etc.
+        for annot in _text_widgets(page):
             qname = _qualified_name(annot)
             if qname in field_map:
-                value, font_size = field_map[qname]
-                _set_field(annot, value, font_size=font_size)
+                _set_da_size(annot, field_map[qname][1])
                 filled.add(qname)
 
     missing = set(field_map) - filled
     if missing:
         log.warning("acroform_filler: fields not found in template: %s", missing)
 
+    # Bake appearance streams ourselves (auto_regenerate=False) so umlauts and
+    # special chars render correctly in every viewer, including poppler — which
+    # drops them when it regenerates appearances from /NeedAppearances.
+    flat = {qname: value for qname, (value, _size) in field_map.items()}
+    baked = True
+    try:
+        for page in writer.pages:
+            writer.update_page_form_field_values(
+                page, flat, auto_regenerate=False
+            )
+    except Exception:
+        baked = False
+        log.exception(
+            "acroform_filler: appearance baking failed — "
+            "falling back to /NeedAppearances"
+        )
+
+    if not baked:
+        # Fallback: write /V directly and force viewer-side regeneration.
+        root = writer._root_object
+        if "/AcroForm" in root:
+            root["/AcroForm"].update({
+                NameObject("/NeedAppearances"): BooleanObject(True),
+            })
+        for page in writer.pages:
+            for annot in _text_widgets(page):
+                qname = _qualified_name(annot)
+                if qname in field_map:
+                    value, font_size = field_map[qname]
+                    _set_field_needappearances(annot, value, font_size=font_size)
+
     with open(out_path, "wb") as f:
         writer.write(f)
 
-    log.info("acroform_filler: wrote %s (%d fields filled)", out_path.name, len(filled))
+    log.info(
+        "acroform_filler: wrote %s (%d fields, baked=%s)",
+        out_path.name, len(filled), baked,
+    )
