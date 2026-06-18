@@ -144,8 +144,13 @@ $("logo-file").addEventListener("change", (e) => {
 });
 
 // Whole zone is clickable (and drag & drop) — opens the file picker.
+// Guard against the programmatic input.click() bubbling back here (the hidden
+// input is a child of the zone), which would recurse and suppress the dialog.
 const logoZone = $("logo-upload-zone");
-logoZone.addEventListener("click", () => $("logo-file").click());
+logoZone.addEventListener("click", (e) => {
+  if (e.target === $("logo-file")) return;
+  $("logo-file").click();
+});
 logoZone.addEventListener("dragover", (e) => { e.preventDefault(); logoZone.classList.add("drag-over"); });
 logoZone.addEventListener("dragleave", () => logoZone.classList.remove("drag-over"));
 logoZone.addEventListener("drop", (e) => {
@@ -219,8 +224,13 @@ $("signature-file").addEventListener("change", (e) => {
 });
 
 // Whole zone is clickable (and drag & drop) — opens the file picker.
+// Guard against the programmatic input.click() bubbling back here (the hidden
+// input is a child of the zone), which would recurse and suppress the dialog.
 const sigZone = $("signature-upload-zone");
-sigZone.addEventListener("click", () => $("signature-file").click());
+sigZone.addEventListener("click", (e) => {
+  if (e.target === $("signature-file")) return;
+  $("signature-file").click();
+});
 sigZone.addEventListener("dragover", (e) => { e.preventDefault(); sigZone.classList.add("drag-over"); });
 sigZone.addEventListener("dragleave", () => sigZone.classList.remove("drag-over"));
 sigZone.addEventListener("drop", (e) => {
