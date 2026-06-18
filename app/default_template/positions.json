@@ -1,25 +1,30 @@
 {
-  "_comment": "AcroForm-Modus: Werte werden direkt in die PDF-Formularfelder geschrieben (editierbar). Feldnamen entsprechen den internen AcroForm-Namen des Default-Templates.",
+  "_comment": "AcroForm-Modus: Werte werden direkt in die Formularfelder des generischen Default-Templates geschrieben (editierbar). Feldnamen entsprechen build_default_template.py. Eigene Templates per Settings-UI hochladen und Feldnamen hier anpassen.",
   "mode": "acroform",
   "header_fields": {
-    "kunde":    "Kunde",
-    "objekt":   "Objekt",
-    "projekt":  "Projekt",
-    "best_nr":  "BestNr",
-    "datum":    "undefined_2"
+    "kunde":   "kunde",
+    "objekt":  "objekt",
+    "projekt": "projekt",
+    "best_nr": "best_nr",
+    "datum":   "datum"
   },
   "row_fields": {
-    "1": ["Text1.0.0.0", "Text2.0.0",  "Text2.1.0"],
-    "2": ["Text1.0.0.2", "Text2.0.2",  "Text2.1.2"],
-    "3": ["Text1.0.0.1", "Text2.0.1",  "Text2.1.1"],
-    "4": ["Text1.0.0.3", "Text2.0.3",  "Text2.1.3"],
-    "5": ["Text1.0.0.4", "Text2.0.4",  "Text2.1.4"],
-    "6": ["Text1.0.0.5", "Text2.0.5",  "Text2.1.5"],
-    "7": ["Text1.0.0.6", "Text2.0.6",  "Text2.1.6"],
-    "8": ["Text1.0.0.7", "Text2.0.7",  "Text11"   ],
-    "9": ["Text1.0.0.8", "Text2.0.8",  "Text2.1.8"]
+    "1": ["aufgabe_1", "einheiten_1", "summe_1"],
+    "2": ["aufgabe_2", "einheiten_2", "summe_2"],
+    "3": ["aufgabe_3", "einheiten_3", "summe_3"],
+    "4": ["aufgabe_4", "einheiten_4", "summe_4"],
+    "5": ["aufgabe_5", "einheiten_5", "summe_5"],
+    "6": ["aufgabe_6", "einheiten_6", "summe_6"],
+    "7": ["aufgabe_7", "einheiten_7", "summe_7"],
+    "8": ["aufgabe_8", "einheiten_8", "summe_8"]
   },
-  "gesamt_field": "Text2.1.7",
-  "bemerkung_fields": ["BemerkungRow1", "BemerkungRow2", "BemerkungRow3"],
-  "bemerkung_chars_per_line": 95
+  "gesamt_field": "gesamt",
+  "bemerkung_fields": ["bemerkung_1", "bemerkung_2"],
+  "bemerkung_chars_per_line": 95,
+  "signature": {
+    "_comment": "Position der hochgeladenen Unterschrift (PNG), Ursprung unten links, PDF-Punkte. Höhe wird automatisch aus dem Seitenverhältnis berechnet.",
+    "x": 56,
+    "y": 70,
+    "width": 150
+  }
 }

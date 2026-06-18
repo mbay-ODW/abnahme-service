@@ -35,6 +35,9 @@ POSITIONS_PATH = DATA_DIR / "positions.json"
 PDFS_DIR = DATA_DIR / "pdfs"
 
 _LOGO_EXTS = (".png", ".jpg", ".jpeg", ".svg", ".webp")
+# Signature must be a raster image with transparency support for clean
+# stamping onto the PDF — PNG/WebP only (no SVG).
+_SIGNATURE_EXTS = (".png", ".webp")
 
 # Defaults that get written on first run
 DEFAULT_SETTINGS: dict[str, Any] = {
@@ -236,6 +239,41 @@ def delete_logo() -> None:
 
 def has_logo() -> bool:
     return logo_path() is not None
+
+
+# ---------- Signature -----------------------------------------------------
+
+
+def signature_path() -> Path | None:
+    """Return path to the stored signature file, or None if not set."""
+    for ext in _SIGNATURE_EXTS:
+        p = DATA_DIR / f"signature{ext}"
+        if p.exists():
+            return p
+    return None
+
+
+def save_signature(content: bytes, ext: str) -> Path:
+    """Save signature bytes. Removes any previously stored signature first."""
+    delete_signature()
+    ext = ext.lower().lstrip(".")
+    if ext not in [e.lstrip(".") for e in _SIGNATURE_EXTS]:
+        ext = "png"
+    path = DATA_DIR / f"signature.{ext}"
+    path.write_bytes(content)
+    return path
+
+
+def delete_signature() -> None:
+    """Remove all stored signature files."""
+    for ext in _SIGNATURE_EXTS:
+        p = DATA_DIR / f"signature{ext}"
+        if p.exists():
+            p.unlink()
+
+
+def has_signature() -> bool:
+    return signature_path() is not None
 
 
 # ---------- Helpers -------------------------------------------------------

@@ -42,16 +42,18 @@ from pydantic import BaseModel
 
 from . import settings_store
 from .claude_client import process_message
-from .pdf_stamper import stamp_pdf, stamp_preview
+from .pdf_stamper import stamp_pdf, stamp_preview, stamp_signature
 from .settings_store import (
     DATA_DIR,
     PDFS_DIR,
     TEMPLATE_PATH,
     delete_logo,
+    delete_signature,
     ensure_bootstrap,
     get_api_key,
     get_model,
     has_logo,
+    has_signature,
     load_positions,
     load_settings,
     load_skill,
@@ -63,8 +65,10 @@ from .settings_store import (
     save_logo,
     save_positions,
     save_settings,
+    save_signature,
     save_skill,
     save_template_pdf,
+    signature_path,
     template_path,
 )
 from .vision_client import analyze_template
@@ -243,11 +247,21 @@ def post_process(req: ProcessRequest) -> ProcessResponse:
 
     fname = filename_for(result.get("kunde", "kunde"), result.get("datum_iso"))
     out_path = PDFS_DIR / fname
+    positions = load_positions()
     try:
-        stamp_pdf(template_path(), load_positions(), pdf_data, out_path)
+        stamp_pdf(template_path(), positions, pdf_data, out_path)
     except Exception as exc:
         log.exception("PDF stamp failed")
         raise HTTPException(500, f"PDF-Bau fehlgeschlagen: {exc}") from exc
+
+    # Stamp the signature image (bottom-left) if one has been uploaded.
+    sig = signature_path()
+    if sig:
+        try:
+            stamp_signature(out_path, sig, positions.get("signature"))
+        except Exception:
+            # A signature failure must not block protocol creation.
+            log.exception("Signature stamp failed — continuing without it")
 
     if req.satz is not None and result.get("kunde"):
         save_customer(result["kunde"], req.satz)
@@ -407,6 +421,67 @@ def get_logo_info() -> dict[str, Any]:
     if not p:
         return {"has_logo": False}
     return {"has_logo": True, "filename": p.name, "size": p.stat().st_size}
+
+
+# ---------- Signature ----------
+
+_SIG_MIME = {"png": "image/png", "webp": "image/webp"}
+_MAX_SIG_BYTES = 2 * 1024 * 1024  # 2 MB
+
+
+@app.get("/api/settings/signature")
+def get_signature():
+    """Serve the stored signature image, or 404 if none uploaded."""
+    p = signature_path()
+    if not p:
+        raise HTTPException(404, "Keine Unterschrift hochgeladen.")
+    ext = p.suffix.lstrip(".")
+    return Response(
+        content=p.read_bytes(),
+        media_type=_SIG_MIME.get(ext, "image/png"),
+    )
+
+
+@app.post("/api/settings/signature")
+async def post_signature(file: UploadFile = File(...)) -> dict[str, Any]:
+    """Upload a signature image (PNG/WebP with transparency, max 2 MB).
+
+    A transparent-background PNG gives the cleanest result, since the image
+    is stamped directly onto the protocol's bottom-left corner."""
+    filename = file.filename or ""
+    ext = Path(filename).suffix.lstrip(".").lower() or "png"
+    if ext not in _SIG_MIME:
+        raise HTTPException(
+            400,
+            f"Dateiformat nicht unterstützt: .{ext}. Erlaubt: png, webp "
+            "(am besten mit transparentem Hintergrund)",
+        )
+    content = await file.read()
+    if len(content) > _MAX_SIG_BYTES:
+        raise HTTPException(400, "Unterschrift zu groß (max. 2 MB).")
+    save_signature(content, ext)
+    return {"ok": True, "ext": ext, "size": len(content)}
+
+
+@app.delete("/api/settings/signature")
+def del_signature() -> dict[str, Any]:
+    """Remove the stored signature."""
+    if not has_signature():
+        raise HTTPException(404, "Keine Unterschrift vorhanden.")
+    delete_signature()
+    return {"ok": True}
+
+
+@app.get("/api/settings/signature/info")
+def get_signature_info() -> dict[str, Any]:
+    p = signature_path()
+    if not p:
+        return {"has_signature": False}
+    return {
+        "has_signature": True,
+        "filename": p.name,
+        "size": p.stat().st_size,
+    }
 
 
 # ---------- Skill ----------

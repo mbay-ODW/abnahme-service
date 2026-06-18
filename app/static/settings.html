@@ -87,6 +87,25 @@
         <small class="muted">PNG · JPG · SVG · WebP — max. 2 MB</small>
       </div>
       <div id="logo-status" class="hidden" style="margin-top:8px;"></div>
+
+      <hr class="section-divider" />
+      <h2>Unterschrift</h2>
+      <p class="muted small">
+        Wird unten links auf jedes erstellte Protokoll gestempelt.
+        Am besten ein PNG mit transparentem Hintergrund. Max. 2 MB.
+      </p>
+
+      <div id="signature-preview-wrap" class="logo-preview-wrap hidden">
+        <img id="signature-preview" src="" alt="Unterschrift" class="logo-preview-img signature-preview-img" />
+        <button id="btn-delete-signature" class="secondary small danger" type="button">Unterschrift entfernen</button>
+      </div>
+
+      <div id="signature-upload-zone" class="upload-zone logo-upload-zone">
+        <input type="file" id="signature-file" accept="image/png,image/webp" hidden />
+        <p><strong>Unterschrift hier ablegen</strong> oder <a href="#" id="btn-pick-signature">Datei wählen</a></p>
+        <small class="muted">PNG · WebP (transparent) — max. 2 MB</small>
+      </div>
+      <div id="signature-status" class="hidden" style="margin-top:8px;"></div>
     </section>
 
     <!-- ============ Tab: Skill ============ -->

@@ -173,6 +173,83 @@ $("btn-delete-logo").addEventListener("click", async () => {
   }
 });
 
+// ---------- Signature ----------
+
+async function loadSignature() {
+  const res = await fetch("/api/settings/signature/info");
+  const info = await res.json();
+  if (info.has_signature) {
+    $("signature-preview").src = "/api/settings/signature?t=" + Date.now();
+    $("signature-preview-wrap").classList.remove("hidden");
+    $("signature-upload-zone").classList.add("hidden");
+  } else {
+    $("signature-preview-wrap").classList.add("hidden");
+    $("signature-upload-zone").classList.remove("hidden");
+  }
+}
+
+function setSignatureStatus(msg, kind = "info") {
+  const el = $("signature-status");
+  el.textContent = msg;
+  el.className = kind;
+  el.classList.remove("hidden");
+  setTimeout(() => el.classList.add("hidden"), 4000);
+}
+
+async function uploadSignature(file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  showLoading("Unterschrift hochladen…");
+  try {
+    const res = await fetch("/api/settings/signature", { method: "POST", body: fd });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || "Fehler beim Hochladen");
+    }
+    toast("Unterschrift gespeichert.", "success");
+    await loadSignature();
+  } catch (e) {
+    setSignatureStatus(`✗ ${e.message}`, "error");
+  } finally {
+    hideLoading();
+  }
+}
+
+$("btn-pick-signature").addEventListener("click", (e) => {
+  e.preventDefault();
+  $("signature-file").click();
+});
+
+$("signature-file").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (file) uploadSignature(file);
+});
+
+const sigZone = $("signature-upload-zone");
+sigZone.addEventListener("dragover", (e) => { e.preventDefault(); sigZone.classList.add("drag-over"); });
+sigZone.addEventListener("dragleave", () => sigZone.classList.remove("drag-over"));
+sigZone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  sigZone.classList.remove("drag-over");
+  const file = e.dataTransfer.files[0];
+  if (file) uploadSignature(file);
+});
+
+$("btn-delete-signature").addEventListener("click", async () => {
+  if (!confirm("Unterschrift wirklich entfernen?")) return;
+  showLoading("Entferne Unterschrift…");
+  try {
+    const res = await fetch("/api/settings/signature", { method: "DELETE" });
+    if (!res.ok) throw new Error("Fehler beim Löschen");
+    toast("Unterschrift entfernt.", "success");
+    await loadSignature();
+  } catch (e) {
+    toast(`Fehler: ${e.message}`, "error");
+  } finally {
+    hideLoading();
+  }
+});
+
 // ---------- Skill tab ----------
 
 let skillOriginal = "";
@@ -362,6 +439,7 @@ $("btn-reset-template").onclick = async () => {
 setupUpload();
 loadGeneral();
 loadLogo();
+loadSignature();
 loadSkill();
 loadTemplate();
 

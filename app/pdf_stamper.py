@@ -26,6 +26,7 @@ from typing import Any
 from pypdf import PdfReader, PdfWriter
 from reportlab.lib.colors import black
 from reportlab.lib.pagesizes import A4
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
@@ -193,6 +194,64 @@ def stamp_pdf(
     overlay_page = overlay_reader.pages[0]
     base_page.merge_page(overlay_page)
     writer.add_page(base_page)
+
+    with open(out_path, "wb") as f:
+        writer.write(f)
+
+
+def stamp_signature(
+    pdf_path: str | Path,
+    signature_path: str | Path,
+    position: dict[str, Any] | None = None,
+    out_path: str | Path | None = None,
+) -> None:
+    """Overlay a signature PNG onto an already-built PDF (bottom-left default).
+
+    Works regardless of the fill mode: the signature is drawn into the page
+    content stream on top of whatever is already there. AcroForm form fields
+    and /NeedAppearances are preserved because we clone the source document
+    (a fresh PdfWriter would drop the root /AcroForm dictionary).
+
+    position keys (PDF points, origin bottom-left):
+        x      : left edge of the signature image (default 76)
+        y      : bottom edge of the signature image (default 70)
+        width  : target width; height is auto-scaled to keep aspect ratio
+                 (default 150)
+    """
+    pdf_path = Path(pdf_path)
+    signature_path = Path(signature_path)
+    out_path = Path(out_path) if out_path else pdf_path
+
+    if not signature_path.exists():
+        raise FileNotFoundError(f"Signature not found: {signature_path}")
+
+    position = position or {}
+    x = float(position.get("x", 76))
+    y = float(position.get("y", 70))
+    width = float(position.get("width", 150))
+
+    reader = PdfReader(str(pdf_path))
+    # clone_from keeps the AcroForm root (incl. /NeedAppearances) intact.
+    writer = PdfWriter(clone_from=reader)
+
+    page = writer.pages[0]
+    page_w = float(page.mediabox.width)
+    page_h = float(page.mediabox.height)
+
+    img = ImageReader(str(signature_path))
+    iw, ih = img.getSize()
+    height = width * (ih / iw) if iw else width
+
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=(page_w, page_h))
+    c.drawImage(img, x, y, width=width, height=height,
+                mask="auto", preserveAspectRatio=True)
+    c.showPage()
+    c.save()
+    buf.seek(0)
+
+    overlay_page = PdfReader(buf).pages[0]
+    page.merge_page(overlay_page)
 
     with open(out_path, "wb") as f:
         writer.write(f)
