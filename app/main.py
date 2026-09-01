@@ -35,8 +35,8 @@ from tempfile import NamedTemporaryFile
 from typing import Any
 
 from anthropic import Anthropic
-from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse, Response
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -85,6 +85,37 @@ CUSTOMERS_PATH = DATA_DIR / "customers.json"
 STATIC_DIR = Path(__file__).parent / "static"
 
 app = FastAPI(title="Abnahme-Service")
+
+AUTH_REQUIRED = os.environ.get("AUTH_REQUIRED", "true").lower() == "true"
+_AUTH_EXEMPT = {"/healthz"}
+
+
+@app.middleware("http")
+async def require_proxy_user(request: Request, call_next):
+    """Second line of defence behind Authelia's forward-auth.
+
+    Every route here serves something worth protecting -- the customer list with its
+    hourly rates, finished protocols, the signature image, the settings -- and none of
+    them checked anything on their own: the service depended entirely on a single
+    `middlewares-authelia` entry in the Traefik labels. Losing that one line would have
+    served all of it to anyone. Requiring the same header inside the app turns that
+    into a 401 instead.
+
+    Written as middleware rather than a router dependency so it also covers the mounted
+    SPA, which a `dependencies=[...]` on FastAPI() would not reach.
+
+    This trusts Remote-User because every router on this host runs forward-auth, so the
+    proxy always overwrites whatever a client sent. Adding a route that bypasses
+    Authelia (an API path with its own token, say) would break that assumption -- the
+    header would have to be stripped there, and this check taught about it.
+
+    AUTH_REQUIRED=false is for local development without a proxy. It defaults to on, so
+    a deployment that forgets the variable is closed rather than open.
+    """
+    if AUTH_REQUIRED and request.url.path not in _AUTH_EXEMPT:
+        if not (request.headers.get("Remote-User") or request.headers.get("X-Forwarded-User")):
+            return JSONResponse({"detail": "unauthenticated"}, status_code=401)
+    return await call_next(request)
 
 
 # ---------- Pydantic models ----------
@@ -324,7 +355,6 @@ def get_settings() -> dict[str, Any]:
     return {
         "anthropic_api_key_set": bool(s.get("anthropic_api_key")),
         "anthropic_api_key_masked": mask_api_key(s.get("anthropic_api_key", "")),
-        "anthropic_api_key": s.get("anthropic_api_key", ""),
         "anthropic_model": s.get("anthropic_model"),
         "surcharge_night_pct": s.get("surcharge_night_pct"),
         "surcharge_sunday_pct": s.get("surcharge_sunday_pct"),

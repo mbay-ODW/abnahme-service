@@ -34,7 +34,9 @@ async function loadGeneral() {
   try {
     const res = await fetch("/api/settings");
     const data = await res.json();
-    $("api-key").value = data.anthropic_api_key || "";
+    // Der Klartext-Key wird bewusst nicht mehr ausgeliefert — das Feld bleibt leer,
+    // der maskierte Wert steht im Placeholder. Leer lassen = Key unveraendert.
+    $("api-key").value = "";
     $("api-key").placeholder = data.anthropic_api_key_masked || "sk-ant-…";
     $("model").value = data.anthropic_model;
     $("surcharge-night").value = data.surcharge_night_pct ?? 30;
